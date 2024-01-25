@@ -2,6 +2,7 @@ package pattern
 
 import (
 	"fmt"
+	"time"
 )
 
 /*
@@ -10,120 +11,58 @@ import (
 	https://en.wikipedia.org/wiki/Facade_pattern
 */
 
-type filamentType string
-
-const (
-	PETG filamentType = "PETG"
-	PLA               = "PLA"
-	ABS               = "ABS"
-)
-
-func newFilamentType(fType string) (filamentType, error) {
-	switch fType {
-	case "PETG":
-		return PETG, nil
-	case "PLA":
-		return PLA, nil
-	case "ABS":
-		return ABS, nil
-	}
-	return "", fmt.Errorf("not allowed '%s' filament", fType)
+type tv struct {
 }
 
-type filament struct {
-	fType filamentType
+func (t *tv) turnOn() {
+	fmt.Println("Tv is on")
 }
 
-func newFilament(fType string) (*filament, error) {
-	t, err := newFilamentType(fType)
-	if err != nil {
-		return nil, err
-	}
-	return &filament{
-		fType: t,
-	}, nil
+func (t *tv) turnOff() {
+	fmt.Println("Tv is off")
 }
 
-func (f *filament) load() {
-	fmt.Printf("loading %s filament\n", f.fType)
+func (t *tv) selectChanel(chanel int) {
+	fmt.Printf("Chanel %d is selected\n", chanel)
 }
 
-func (f *filament) unload() {
-	fmt.Println("unloading filament")
+type conditioner struct {
 }
 
-type heatbed struct {
-	temperature int
+func (c *conditioner) turnOn() {
+	fmt.Println("Conditioner is on")
 }
 
-func newHeatbed(temperature int) *heatbed {
-	return &heatbed{
-		temperature: temperature,
-	}
+func (c *conditioner) turnOff() {
+	fmt.Println("Conditioner is off")
 }
 
-func (h *heatbed) setTemperature(temperature int) error {
-	if temperature < 0 || temperature > 100 {
-		return fmt.Errorf("%d temperature not allowed", temperature)
-	}
-
-	h.temperature = temperature
-	return nil
+func (c *conditioner) setTemperature(temp int) {
+	fmt.Printf("Set temperature to %d celsius\n", temp)
 }
 
-func (h *heatbed) heatUp() {
-	fmt.Printf("heating up to %d degrees\n", h.temperature)
+type relaxFacade struct {
+	c conditioner
+	t tv
 }
 
-type hotend struct {
-	temperature int
+func (f *relaxFacade) relax() {
+	f.t.turnOn()
+	f.t.selectChanel(14)
+	f.c.turnOn()
+	f.c.setTemperature(23)
+	fmt.Println("\nJust relax!\n")
 }
 
-func newHotend(temperature int) *hotend {
-	return &hotend{
-		temperature: temperature,
-	}
+func (f *relaxFacade) goToWork() {
+	f.t.turnOff()
+	f.c.turnOff()
+	fmt.Println("\nGo to work!\n")
 }
 
-func (h *hotend) setHotend(temperature int) error {
-	if temperature < 0 || temperature > 300 {
-		return fmt.Errorf("%d temperature not allowed", temperature)
-	}
-
-	h.temperature = temperature
-	return nil
-}
-
-func (h *hotend) heatUp() {
-	fmt.Printf("heating up to %d degrees\n", h.temperature)
-}
-
-type printerFacade struct {
-	filament *filament
-	heatbed  *heatbed
-	hotend   *hotend
-}
-
-func newPrinterFacade(fType string, heatbedTemp int, hotendTemp int) (*printerFacade, error) {
-	f, err := newFilament(fType)
-	if err != nil {
-		return nil, err
-	}
-	return &printerFacade{
-		filament: f,
-		heatbed:  newHeatbed(heatbedTemp),
-		hotend:   newHotend(hotendTemp),
-	}, nil
-}
-
-func (p *printerFacade) preparePrinting() {
-	fmt.Println("unloaing old filament")
-	p.filament.unload()
-	p.filament.load()
-
-	fmt.Println("heating bed")
-	p.heatbed.heatUp()
-
-	fmt.Println("heating hotend")
-	p.hotend.heatUp()
+func main() {
+	facade := relaxFacade{t: tv{}, c: conditioner{}}
+	facade.relax()
+	time.Sleep(3 * time.Second)
+	facade.goToWork()
 }
